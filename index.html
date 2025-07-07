@@ -8,7 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: 'Poppins', sans serif; }
+    body { font-family: 'Poppins', sans-serif; }
     #countdown.initial { font-size: 2rem; color: #ffd700; }
     #countdown.action { font-size: 5rem; color: #ff4500; animation: pulse 0.5s infinite alternate; }
     @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
@@ -95,7 +95,6 @@
       <source src="./static/rod.webm" type="video/webm">
     </video>
   </div>
-
   <script type="module">
     const fullScreenContainer = document.getElementById('fullScreenContainer');
     const fullScreenVideo = document.getElementById('fullScreenVideo');
@@ -109,14 +108,17 @@
     const downloadLink = document.getElementById('downloadLink');
     const shareButton = document.getElementById('shareButton');
     const recordingActions = document.getElementById('recordingActions');
+    const message = document.getElementById('message');
+    const countdown = document.getElementById('countdown');
+    const timer = document.getElementById('timer');
+
     let mediaRecorder = null;
     let recordedChunks = [];
     let stream = null;
 
     document.querySelectorAll(".thumbnail").forEach((thumb, index) => {
-      function handleThumbnailInteraction(event) {
-        console.log(`Thumbnail ${index} interaction: ${event.type}`);
-        if (index === 3) { // 4th.gif (index 3)
+      thumb.addEventListener("click", () => {
+        if (index === 3) {
           rodVideo.style.display = 'block';
           rodPlayer.play().catch(err => console.error("Rod video playback failed:", err));
         } else {
@@ -132,22 +134,10 @@
           }
           fullScreenVideo.play();
         }
-      }
-      thumb.addEventListener("click", handleThumbnailInteraction);
-      thumb.addEventListener("touchstart", handleThumbnailInteraction);
+      });
     });
 
     closeModal.addEventListener("click", (event) => {
-      event.stopPropagation();
-      fullScreenVideo.pause();
-      fullScreenVideo.src = '';
-      fullScreenContainer.style.display = 'none';
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch(err => console.error("Exit fullscreen failed:", err));
-      }
-    });
-
-    closeModal.addEventListener("touchstart", (event) => {
       event.stopPropagation();
       fullScreenVideo.pause();
       fullScreenVideo.src = '';
@@ -165,9 +155,7 @@
       }
     });
 
-    // Play countryroads.mp4 when clicking or touching 1take.gif
-    function handleDefaultGifInteraction(event) {
-      console.log('Default GIF interaction:', event.type);
+    function playCountryRoads() {
       defaultGif.style.visibility = 'hidden';
       if (video.srcObject) {
         video.srcObject.getTracks().forEach(track => track.stop());
@@ -180,8 +168,8 @@
       video.play().catch(err => console.error("Video playback failed:", err));
     }
 
-    defaultGif.addEventListener('click', handleDefaultGifInteraction);
-    defaultGif.addEventListener('touchstart', handleDefaultGifInteraction);
+    defaultGif.addEventListener('click', playCountryRoads);
+    defaultGif.addEventListener('touchstart', playCountryRoads);
 
     video.addEventListener('ended', () => {
       video.classList.remove('playing-mp4');
@@ -190,7 +178,6 @@
       defaultGif.style.visibility = 'visible';
     });
 
-    // Close rodVideo with Escape key or X button
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && rodVideo.style.display === 'block') {
         rodVideo.style.display = 'none';
@@ -199,11 +186,6 @@
     });
 
     closeRod.addEventListener('click', () => {
-      rodVideo.style.display = 'none';
-      rodPlayer.pause();
-    });
-
-    closeRod.addEventListener('touchstart', (event) => {
       rodVideo.style.display = 'none';
       rodPlayer.pause();
     });
@@ -235,14 +217,6 @@
     const artist = "RobbieWilliams";
     const song = "CountryRoads";
     const subject = "1Take_Videos";
-    const countdown = document.getElementById('countdown');
-    const message = document.getElementById('message');
-    const recordButton = document.getElementById('recordButton');
-    const timer = document.getElementById('timer');
-    const recordingPlayback = document.getElementById('recordingPlayback');
-    const downloadLink = document.getElementById('downloadLink');
-    const shareButton = document.getElementById('shareButton');
-    const recordingActions = document.getElementById('recordingActions');
 
     signInAnonymously(auth).then((userCredential) => {
       userId = userCredential.user.uid;
@@ -252,41 +226,30 @@
       message.textContent = "Authentication failed. Please try again.";
     });
 
-    function handleRecordButtonInteraction(event) {
-      console.log('Record button interaction:', event.type);
+    recordButton.addEventListener('click', async () => {
       if (!userId) {
         message.textContent = "Not authenticated. Please wait and try again.";
         console.log("Waiting for authentication...");
-        setTimeout(async () => {
-          if (!userId) {
-            message.textContent = "Authentication failed. Please refresh and try again.";
-            return;
-          }
-          await startWebcam();
-          if (mediaRecorder) {
-            await startCountdown();
-          }
-        }, 2000);
-      } else {
-        startWebcam().then(() => {
-          if (mediaRecorder) {
-            startCountdown();
-          }
-        });
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        if (!userId) {
+          message.textContent = "Authentication failed. Please refresh and try again.";
+          return;
+        }
       }
-    }
-
-    recordButton.addEventListener('click', handleRecordButtonInteraction);
-    recordButton.addEventListener('touchstart', handleRecordButtonInteraction);
+      await startWebcam();
+      if (mediaRecorder) {
+        await startCountdown();
+      }
+    });
 
     async function startWebcam() {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        video.srcObject = null; // No video feed
+        video.srcObject = null;
         video.src = './static/countryroadlyrics.mp4';
         video.classList.add('playing-mp4');
         video.style.display = 'block';
-        video.muted = true; // Prevent audio feedback
+        video.muted = true;
         mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
         mediaRecorder.ondataavailable = (e) => {
           if (e.data.size > 0) {
@@ -350,11 +313,10 @@
         await video.play();
       } catch (error) {
         console.error("Lyrics video playback failed:", error.message);
-        // Continue recording even if video fails
       }
-      video.loop = false; // Play once
+      video.loop = false;
       video.addEventListener('ended', () => {
-        video.pause(); // Hold last frame
+        video.pause();
       }, { once: true });
       startTimer();
       await new Promise(resolve => setTimeout(resolve, 18000));
@@ -373,7 +335,7 @@
         timer.textContent = timeLeft;
         if (timeLeft <= 0) {
           clearInterval(timerInterval);
-          video.pause(); // Ensure video pauses at 18 seconds
+          video.pause();
         }
       }, 1000);
     }
@@ -403,16 +365,12 @@
         return;
       }
 
-      // Display the recording for playback
       const playbackUrl = URL.createObjectURL(blob);
       recordingPlayback.src = playbackUrl;
       recordingPlayback.style.display = 'block';
-
-      // Set up download link
       downloadLink.href = playbackUrl;
       downloadLink.style.display = 'inline-block';
 
-      // Set up share button
       const storageRef = ref(storage, `videos/${song}/${userId}_${Date.now()}.webm`);
       console.log("Uploading to:", storageRef.fullPath);
       try {
@@ -432,7 +390,6 @@
               console.error("Share failed:", err);
             }
           } else {
-            // Fallback: Copy URL to clipboard
             navigator.clipboard.writeText(downloadUrl).then(() => {
               alert('Shareable link copied to clipboard!');
             }).catch(err => {
@@ -453,14 +410,13 @@
 
     async function showMessage() {
       await new Promise(resolve => setTimeout(resolve, 3000));
-      message.textContent = "Good job! Check back later to see if you made the top 4!";
+      message.textContent = "Come back tomorrow too for a new song!";
       await new Promise(resolve => setTimeout(resolve, 3000));
       message.style.visibility = 'hidden';
       video.style.display = 'none';
       defaultGif.style.visibility = 'visible';
       recordButton.disabled = false;
       recordButton.textContent = 'Record';
-      // Keep recordingPlayback and recordingActions visible
     }
   </script>
 </body>
