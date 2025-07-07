@@ -91,7 +91,7 @@
 
   <div id="rodVideo" class="full-screen-video">
     <button id="closeRod" onclick="document.getElementById('rodVideo').style.display='none'">×</button>
-    <video id="rodPlayer" controls autoplay playsinline>
+    <video id="rodPlayer" controls playsinline>
       <source src="./static/rod.webm" type="video/webm">
     </video>
   </div>
@@ -188,6 +188,7 @@
 
     rodPlayer.addEventListener('ended', () => {
       rodVideo.style.display = 'none';
+      rodPlayer.pause();
     });
 
     // Firebase & recording logic
@@ -212,6 +213,14 @@
     const artist = "RobbieWilliams";
     const song = "CountryRoads";
     const subject = "1Take_Videos";
+    const countdown = document.getElementById('countdown');
+    const message = document.getElementById('message');
+    const recordButton = document.getElementById('recordButton');
+    const timer = document.getElementById('timer');
+    const recordingPlayback = document.getElementById('recordingPlayback');
+    const downloadLink = document.getElementById('downloadLink');
+    const shareButton = document.getElementById('shareButton');
+    const recordingActions = document.getElementById('recordingActions');
 
     signInAnonymously(auth).then((userCredential) => {
       userId = userCredential.user.uid;
@@ -400,7 +409,7 @@
           }
         };
         recordingActions.style.display = 'block';
-        message.textContent = "Good job! Wait now for your recording to be processed and then to see if you made the top 4!";
+        message.textContent = "Good job! Check back later to see if you made the top 4!";
       } catch (error) {
         console.error("Upload failed:", error.code, error.message);
         message.textContent = `Upload failed: ${error.message}`;
@@ -411,7 +420,7 @@
 
     async function showMessage() {
       await new Promise(resolve => setTimeout(resolve, 3000));
-      message.textContent = "Good job! Wait now for your recording to be processed and then to see if you made the top 4!";
+      message.textContent = "Good job! Check back later to see if you made the top 4!";
       await new Promise(resolve => setTimeout(resolve, 3000));
       message.style.visibility = 'hidden';
       video.style.display = 'none';
