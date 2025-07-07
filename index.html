@@ -47,6 +47,9 @@
     #rodVideo video { width: 100%; height: 100%; object-fit: contain; background: #000; }
     #closeRod { position: absolute; top: 20px; right: 30px; color: white; font-size: 3rem; font-weight: bold; background: none; border: none; cursor: pointer; z-index: 1002; }
     #recordingPlayback { margin-top: 10px; display: none; }
+    #recordingActions { margin-top: 10px; display: none; }
+    #shareButton { background-color: #ff4500; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+    #shareButton:hover { background-color: #e03e00; }
   </style>
 </head>
 <body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen">
@@ -59,9 +62,13 @@
       <div id="message" class="absolute inset-0 flex items-center justify-center text-white text-2xl font-bold bg-black bg-opacity-50 hidden"></div>
       <div id="timer"></div>
     </div>
-    <button id="recordButton" class="w-2/3 bg-orange-500 text-black py-2 rounded-lg hover:bg-orange-600 font-extrabold mx-auto block">Now record your take</button>
-    <p class="text-center text-xs mt-2">TOP 4 takes get posted daily below!</p>
+    <button id="recordButton" class="w-2/3 bg-orange-500 text-black py-2 rounded-lg hover:bg-orange-600 font-extrabold mx-auto block">Record</button>
+    <p class="text-center text-xs mt-2">Top 4 get posted below</p>
     <audio id="recordingPlayback" controls style="width: 100%;"></audio>
+    <div id="recordingActions">
+      <a id="downloadLink" download="recording.webm" style="display: none;">Download Recording</a>
+      <button id="shareButton" style="display: none;">Share Recording</button>
+    </div>
   </div>
 
   <h2 class="text-xl font-bold mt-10">Today's top 4 Leaderboard</h2>
@@ -72,7 +79,7 @@
     <div class="video-container"><img src="./static/4th.gif" alt="Player 4" class="thumbnail" data-video="./static/rod.webm"></div>
   </div>
 
-  <h2 class="text-xl font-bold mt-10">18 sec Sing-Off Past Winners</h2>
+  <h2 class="text-xl font-bold mt-10">18 s Sing-Off Past Winners</h2>
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-6xl px-4">
     <!-- Add future MP4s here -->
   </div>
@@ -98,6 +105,13 @@
     const rodVideo = document.getElementById('rodVideo');
     const rodPlayer = document.getElementById('rodPlayer');
     const closeRod = document.getElementById('closeRod');
+    const recordingPlayback = document.getElementById('recordingPlayback');
+    const downloadLink = document.getElementById('downloadLink');
+    const shareButton = document.getElementById('shareButton');
+    const recordingActions = document.getElementById('recordingActions');
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let stream = null;
 
     document.querySelectorAll(".thumbnail").forEach((thumb, index) => {
       thumb.addEventListener("click", () => {
@@ -179,7 +193,7 @@
     // Firebase & recording logic
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
     import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-    import { getStorage, ref, uploadBytes } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js';
+    import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyBUGFGGvZTlBiTc7ZSz7KGt3wJ_95mX8VI",
@@ -195,17 +209,9 @@
     const auth = getAuth(app);
     const storage = getStorage(app);
     let userId = null;
-    const artist = "RobbieWilliams"; // Update to new artist tomorrow
-    const song = "CountryRoads"; // Update to new song daily
+    const artist = "RobbieWilliams";
+    const song = "CountryRoads";
     const subject = "1Take_Videos";
-    const countdown = document.getElementById('countdown');
-    const message = document.getElementById('message');
-    const recordButton = document.getElementById('recordButton');
-    const timer = document.getElementById('timer');
-    const recordingPlayback = document.getElementById('recordingPlayback');
-    let mediaRecorder = null;
-    let recordedChunks = [];
-    let stream = null;
 
     signInAnonymously(auth).then((userCredential) => {
       userId = userCredential.user.uid;
@@ -251,7 +257,7 @@
         mediaRecorder.onstop = uploadVideo;
       } catch (error) {
         alert(`Failed to access microphone: ${error.message}`);
-        console.error("Microphone access failed:", error.code, error.message);
+        console.error("Microphone access failed:", error);
         if (stream) {
           stream.getTracks().forEach(track => track.stop());
           stream = null;
@@ -260,7 +266,7 @@
         video.style.display = 'none';
         defaultGif.style.visibility = 'visible';
         recordButton.disabled = false;
-        recordButton.textContent = 'RECORD';
+        recordButton.textContent = 'Record';
       }
     }
 
@@ -360,12 +366,41 @@
       recordingPlayback.src = playbackUrl;
       recordingPlayback.style.display = 'block';
 
-      const storageRef = ref(storage, `videos/${artist}/${song}/${userId}/${Date.now()}.webm`);
+      // Set up download link
+      downloadLink.href = playbackUrl;
+      downloadLink.style.display = 'inline-block';
+
+      // Set up share button
+      const storageRef = ref(storage, `videos/${song}/${userId}_${Date.now()}.webm`);
       console.log("Uploading to:", storageRef.fullPath);
       try {
         await uploadBytes(storageRef, blob);
         console.log("Upload successful to:", storageRef.fullPath);
-        message.textContent = "Good job! Wait now to get your recording and then check back to see if you made the top 4!";
+        const downloadUrl = await getDownloadURL(storageRef);
+        shareButton.style.display = 'inline-block';
+        shareButton.onclick = async () => {
+          if (navigator.share) {
+            try {
+              await navigator.share({
+                title: 'My 18sec Sing-Off Recording',
+                text: 'Check out my recording from 18sec Sing-Off!',
+                url: downloadUrl
+              });
+            } catch (err) {
+              console.error("Share failed:", err);
+            }
+          } else {
+            // Fallback: Copy URL to clipboard
+            navigator.clipboard.writeText(downloadUrl).then(() => {
+              alert('Shareable link copied to clipboard!');
+            }).catch(err => {
+              console.error("Clipboard copy failed:", err);
+              alert('Failed to copy link. URL: ' + downloadUrl);
+            });
+          }
+        };
+        recordingActions.style.display = 'block';
+        message.textContent = "Good job! Wait now for your recording to be processed and then to see if you made the top 4!";
       } catch (error) {
         console.error("Upload failed:", error.code, error.message);
         message.textContent = `Upload failed: ${error.message}`;
@@ -376,14 +411,14 @@
 
     async function showMessage() {
       await new Promise(resolve => setTimeout(resolve, 3000));
-      message.textContent = "Good job! Wait now to get your recording and then check back to see if you made the top 4!";
+      message.textContent = "Good job! Wait now for your recording to be processed and then to see if you made the top 4!";
       await new Promise(resolve => setTimeout(resolve, 3000));
       message.style.visibility = 'hidden';
       video.style.display = 'none';
       defaultGif.style.visibility = 'visible';
       recordButton.disabled = false;
       recordButton.textContent = 'Record';
-      recordingPlayback.style.display = 'none'; // Hide playback after message
+      // Keep recordingPlayback and recordingActions visible
     }
   </script>
 </body>
