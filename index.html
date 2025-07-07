@@ -115,6 +115,27 @@
 
     document.querySelectorAll(".thumbnail").forEach((thumb, index) => {
       thumb.addEventListener("click", () => {
+        console.log(`Thumbnail ${index} clicked`);
+        if (index === 3) { // 4th.gif (index 3)
+          rodVideo.style.display = 'block';
+          rodPlayer.play().catch(err => console.error("Rod video playback failed:", err));
+        } else {
+          const videoSrc = thumb.getAttribute("data-video");
+          fullScreenVideo.src = videoSrc;
+          fullScreenContainer.style.display = 'block';
+          if (fullScreenVideo.requestFullscreen) {
+            fullScreenVideo.requestFullscreen().catch(err => {
+              console.error("Fullscreen failed:", err);
+              fullScreenVideo.style.minWidth = '100vw';
+              fullScreenVideo.style.minHeight = '100vh';
+            });
+          }
+          fullScreenVideo.play();
+        }
+      });
+      thumb.addEventListener("touchstart", (event) => {
+        event.preventDefault(); // Prevent scroll or other default touch behaviors
+        console.log(`Thumbnail ${index} touched`);
         if (index === 3) { // 4th.gif (index 3)
           rodVideo.style.display = 'block';
           rodPlayer.play().catch(err => console.error("Rod video playback failed:", err));
@@ -144,6 +165,17 @@
       }
     });
 
+    closeModal.addEventListener("touchstart", (event) => {
+      event.stopPropagation();
+      event.preventDefault();
+      fullScreenVideo.pause();
+      fullScreenVideo.src = '';
+      fullScreenContainer.style.display = 'none';
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(err => console.error("Exit fullscreen failed:", err));
+      }
+    });
+
     document.addEventListener('fullscreenchange', () => {
       if (!document.fullscreenElement) {
         fullScreenContainer.style.display = 'none';
@@ -152,8 +184,10 @@
       }
     });
 
-    // Play countryroads.mp4 when clicking 1take.gif
-    defaultGif.addEventListener('click', () => {
+    // Play countryroads.mp4 when clicking or touching 1take.gif
+    function handleDefaultGifInteraction(event) {
+      event.preventDefault();
+      console.log('Default GIF interaction:', event.type);
       defaultGif.style.visibility = 'hidden';
       if (video.srcObject) {
         video.srcObject.getTracks().forEach(track => track.stop());
@@ -164,7 +198,10 @@
       video.style.display = 'block';
       video.muted = false;
       video.play().catch(err => console.error("Video playback failed:", err));
-    });
+    }
+
+    defaultGif.addEventListener('click', handleDefaultGifInteraction);
+    defaultGif.addEventListener('touchstart', handleDefaultGifInteraction);
 
     video.addEventListener('ended', () => {
       video.classList.remove('playing-mp4');
@@ -182,6 +219,12 @@
     });
 
     closeRod.addEventListener('click', () => {
+      rodVideo.style.display = 'none';
+      rodPlayer.pause();
+    });
+
+    closeRod.addEventListener('touchstart', (event) => {
+      event.preventDefault();
       rodVideo.style.display = 'none';
       rodPlayer.pause();
     });
@@ -230,21 +273,33 @@
       message.textContent = "Authentication failed. Please try again.";
     });
 
-    recordButton.addEventListener('click', async () => {
+    function handleRecordButtonInteraction(event) {
+      event.preventDefault();
+      console.log('Record button interaction:', event.type);
       if (!userId) {
         message.textContent = "Not authenticated. Please wait and try again.";
         console.log("Waiting for authentication...");
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        if (!userId) {
-          message.textContent = "Authentication failed. Please refresh and try again.";
-          return;
-        }
+        setTimeout(async () => {
+          if (!userId) {
+            message.textContent = "Authentication failed. Please refresh and try again.";
+            return;
+          }
+          await startWebcam();
+          if (mediaRecorder) {
+            await startCountdown();
+          }
+        }, 2000);
+      } else {
+        startWebcam().then(() => {
+          if (mediaRecorder) {
+            startCountdown();
+          }
+        });
       }
-      await startWebcam();
-      if (mediaRecorder) {
-        await startCountdown();
-      }
-    });
+    }
+
+    recordButton.addEventListener('click', handleRecordButtonInteraction);
+    recordButton.addEventListener('touchstart', handleRecordButtonInteraction);
 
     async function startWebcam() {
       try {
