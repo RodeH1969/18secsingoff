@@ -1,0 +1,326 @@
+  <script type="module">
+    const fullScreenContainer = document.getElementById('fullScreenContainer');
+    const fullScreenVideo = document.getElementById('fullScreenVideo');
+    const closeModal = document.getElementById("closeModal");
+    const video = document.getElementById('video');
+    const defaultGif = document.getElementById('defaultGif');
+    const rodVideo = document.getElementById('rodVideo');
+    const rodPlayer = document.getElementById('rodPlayer');
+    const closeRod = document.getElementById('closeRod');
+    const recordingPlayback = document.getElementById('recordingPlayback');
+    const downloadLink = document.getElementById('downloadLink');
+    const shareButton = document.getElementById('shareButton');
+    const recordingActions = document.getElementById('recordingActions');
+    const message = document.getElementById('message');
+    const countdown = document.getElementById('countdown');
+    const timer = document.getElementById('timer');
+
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let stream = null;
+
+    document.querySelectorAll(".thumbnail").forEach((thumb, index) => {
+      thumb.addEventListener("click", () => {
+        if (index === 3) {
+          rodVideo.style.display = 'block';
+          rodPlayer.play().catch(err => console.error("Rod video playback failed:", err));
+        } else {
+          const videoSrc = thumb.getAttribute("data-video");
+          fullScreenVideo.src = videoSrc;
+          fullScreenContainer.style.display = 'block';
+          if (fullScreenVideo.requestFullscreen) {
+            fullScreenVideo.requestFullscreen().catch(err => {
+              console.error("Fullscreen failed:", err);
+              fullScreenVideo.style.minWidth = '100vw';
+              fullScreenVideo.style.minHeight = '100vh';
+            });
+          }
+          fullScreenVideo.play();
+        }
+      });
+    });
+
+    closeModal.addEventListener("click", (event) => {
+      event.stopPropagation();
+      fullScreenVideo.pause();
+      fullScreenVideo.src = '';
+      fullScreenContainer.style.display = 'none';
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(err => console.error("Exit fullscreen failed:", err));
+      }
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement) {
+        fullScreenContainer.style.display = 'none';
+        fullScreenVideo.pause();
+        fullScreenVideo.src = '';
+      }
+    });
+
+    function playCountryRoads() {
+      defaultGif.style.visibility = 'hidden';
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+      }
+      video.src = './static/countryroads.mp4';
+      video.classList.add('playing-mp4');
+      video.style.display = 'block';
+      video.muted = false;
+      video.play().catch(err => console.error("Video playback failed:", err));
+    }
+
+    defaultGif.addEventListener('click', playCountryRoads);
+    defaultGif.addEventListener('touchstart', playCountryRoads);
+
+    video.addEventListener('ended', () => {
+      video.classList.remove('playing-mp4');
+      video.src = '';
+      video.style.display = 'none';
+      defaultGif.style.visibility = 'visible';
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && rodVideo.style.display === 'block') {
+        rodVideo.style.display = 'none';
+        rodPlayer.pause();
+      }
+    });
+
+    closeRod.addEventListener('click', () => {
+      rodVideo.style.display = 'none';
+      rodPlayer.pause();
+    });
+
+    rodPlayer.addEventListener('ended', () => {
+      rodVideo.style.display = 'none';
+      rodPlayer.pause();
+    });
+
+    // Firebase & recording logic
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+    import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+    import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBUGFGGvZTlBiTc7ZSz7KGt3wJ_95mX8VI",
+      authDomain: "singoffstar.firebaseapp.com",
+      projectId: "singoffstar",
+      storageBucket: "singoffstar.firebasestorage.app",
+      messagingSenderId: "383115460973",
+      appId: "1:383115460973:web:99a8ac072b66ffdb2f9a64",
+      measurementId: "G-9MWH7F6N2G"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const storage = getStorage(app);
+    let userId = null;
+    const artist = "RobbieWilliams";
+    const song = "CountryRoads";
+    const subject = "1Take_Videos";
+
+    signInAnonymously(auth).then((userCredential) => {
+      userId = userCredential.user.uid;
+      console.log("Authenticated user ID:", userId);
+    }).catch((error) => {
+      console.error("Firebase auth failed:", error.code, error.message);
+      message.textContent = "Authentication failed. Please try again.";
+    });
+
+    recordButton.addEventListener('click', async () => {
+      if (!userId) {
+        message.textContent = "Not authenticated. Please wait and try again.";
+        console.log("Waiting for authentication...");
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        if (!userId) {
+          message.textContent = "Authentication failed. Please refresh and try again.";
+          return;
+        }
+      }
+      await startWebcam();
+      if (mediaRecorder) {
+        await startCountdown();
+      }
+    });
+
+    async function startWebcam() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        video.srcObject = null;
+        video.src = './static/countryroadlyrics.mp4';
+        video.classList.add('playing-mp4');
+        video.style.display = 'block';
+        video.muted = true;
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            recordedChunks.push(e.data);
+            console.log("Data chunk received:", e.data.size, "bytes");
+          } else {
+            console.log("Empty data chunk received");
+          }
+        };
+        mediaRecorder.onstop = uploadVideo;
+      } catch (error) {
+        alert(`Failed to access microphone: ${error.message}`);
+        console.error("Microphone access failed:", error);
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+          stream = null;
+        }
+        video.src = '';
+        video.style.display = 'none';
+        defaultGif.style.visibility = 'visible';
+        recordButton.disabled = false;
+        recordButton.textContent = 'Record';
+      }
+    }
+
+    async function startCountdown() {
+      const messages = [
+        { text: "You've got 1 take", class: 'initial' },
+        { text: "Wait for the lyrics to appear", class: 'initial' },
+        { text: "Ready", class: 'action' },
+        { text: "Setty", class: 'action' },
+        { text: "Aaaand Go!", class: 'action' }
+      ];
+      defaultGif.style.visibility = 'visible';
+      countdown.style.visibility = 'visible';
+      timer.style.visibility = 'visible';
+
+      for (let msg of messages) {
+        countdown.textContent = msg.text;
+        countdown.className = `absolute inset-0 flex items-center justify-content-center text-white font-bold ${msg.class}`;
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      countdown.style.visibility = 'hidden';
+      defaultGif.style.visibility = 'hidden';
+      await recordVideo();
+    }
+
+    async function recordVideo() {
+      if (!mediaRecorder) {
+        console.error("MediaRecorder not initialized");
+        message.textContent = "Recording failed. Please try again.";
+        await showMessage();
+        return;
+      }
+      recordedChunks = [];
+      mediaRecorder.start();
+      console.log("Recording started");
+      recordButton.disabled = true;
+      recordButton.textContent = 'Recording...';
+      try {
+        await video.play();
+      } catch (error) {
+        console.error("Lyrics video playback failed:", error.message);
+      }
+      video.loop = false;
+      video.addEventListener('ended', () => {
+        video.pause();
+      }, { once: true });
+      startTimer();
+      await new Promise(resolve => setTimeout(resolve, 18000));
+      mediaRecorder.stop();
+      console.log("Recording stopped");
+      timer.style.visibility = 'hidden';
+      message.textContent = "Processing...";
+      message.style.visibility = 'visible';
+    }
+
+    function startTimer() {
+      let timeLeft = 18;
+      timer.textContent = timeLeft;
+      const timerInterval = setInterval(() => {
+        timeLeft--;
+        timer.textContent = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          video.pause();
+        }
+      }, 1000);
+    }
+
+    async function uploadVideo() {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+      }
+      video.src = '';
+      video.srcObject = null;
+      mediaRecorder = null;
+
+      if (recordedChunks.length === 0 || !recordedChunks.some(chunk => chunk.size > 0)) {
+        console.error("No valid recorded data");
+        message.textContent = "No recording data. Please try again.";
+        await showMessage();
+        return;
+      }
+
+      const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+      console.log("Blob created, size:", blob.size, "bytes");
+      if (blob.size === 0) {
+        console.error("Empty blob, upload aborted");
+        message.textContent = "Recording is empty. Please try again.";
+        await showMessage();
+        return;
+      }
+
+      const playbackUrl = URL.createObjectURL(blob);
+      recordingPlayback.src = playbackUrl;
+      recordingPlayback.style.display = 'block';
+      downloadLink.href = playbackUrl;
+      downloadLink.style.display = 'inline-block';
+
+      const storageRef = ref(storage, `videos/${song}/${userId}_${Date.now()}.webm`);
+      console.log("Uploading to:", storageRef.fullPath);
+      try {
+        await uploadBytes(storageRef, blob);
+        console.log("Upload successful to:", storageRef.fullPath);
+        const downloadUrl = await getDownloadURL(storageRef);
+        shareButton.style.display = 'inline-block';
+        shareButton.onclick = async () => {
+          if (navigator.share) {
+            try {
+              await navigator.share({
+                title: 'My 18sec Sing-Off Recording',
+                text: 'Check out my recording from 18sec Sing-Off!',
+                url: downloadUrl
+              });
+            } catch (err) {
+              console.error("Share failed:", err);
+            }
+          } else {
+            navigator.clipboard.writeText(downloadUrl).then(() => {
+              alert('Shareable link copied to clipboard!');
+            }).catch(err => {
+              console.error("Clipboard copy failed:", err);
+              alert('Failed to copy link. URL: ' + downloadUrl);
+            });
+          }
+        };
+        recordingActions.style.display = 'block';
+        message.textContent = "Good job! Check back later to see if you made the top 4!";
+      } catch (error) {
+        console.error("Upload failed:", error.code, error.message);
+        message.textContent = `Upload failed: ${error.message}`;
+      } finally {
+        await showMessage();
+      }
+    }
+
+    async function showMessage() {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      message.textContent = "Good job! Wait now for your recording to be processed and then to see if you made the top 4!";
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      message.style.visibility = 'hidden';
+      video.style.display = 'none';
+      defaultGif.style.visibility = 'visible';
+      recordButton.disabled = false;
+      recordButton.textContent = 'Record';
+    }
+  </script>
+</body>
+</html>

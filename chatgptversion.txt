@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>1 Take</title>
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Poppins', sans-serif; }
+    #countdown.initial { font-size: 2rem; color: #ffd700; }
+    #countdown.action { font-size: 5rem; color: #ff4500; animation: pulse 0.5s infinite alternate; }
+    @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
+    #timer {
+      position: absolute; top: 10px; left: 10px; font-size: 2rem; font-weight: 900;
+      color: #ff4500; text-shadow: 1px 1px 0 #000; z-index: 30 !important;
+      background: rgba(255,255,255,0.7); padding: 5px 10px; border-radius: 5px; visibility: hidden;
+    }
+    #countdown, #message {
+      z-index: 50 !important; background: rgba(0,0,0,0.8);
+      color: #ffffff; visibility: hidden; display: flex; align-items: center;
+      justify-content: center; text-align: center; font-size: 1.5rem; padding: 20px;
+    }
+    #video { z-index: 10; object-fit: contain; width: 100%; height: 100%; display: none; }
+    #defaultGif { z-index: 15; cursor: pointer; }
+    .video-container { position: relative; width: 100%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .thumbnail { cursor: pointer; border-radius: 6px; transition: transform 0.2s; }
+    .thumbnail:hover { transform: scale(1.05); }
+    .full-screen-video { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #000; z-index: 1000; display: none; }
+    .full-screen-video video {
+      width: 100%;
+      height: 100%;
+      min-width: 100vw;
+      min-height: 100vh;
+      max-width: 100vw;
+      max-height: 100vh;
+      object-fit: contain;
+      background: #000;
+    }
+    #video.playing-mp4 {
+      display: block;
+      visibility: visible;
+      z-index: 12;
+    }
+    #rodVideo { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #000; z-index: 1001; display: none; }
+    #rodVideo video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+    #closeRod { position: absolute; top: 20px; right: 30px; color: white; font-size: 3rem; font-weight: bold; background: none; border: none; cursor: pointer; z-index: 1002; }
+    #recordingPlayback { margin-top: 10px; display: none; }
+    #recordingActions { margin-top: 10px; display: none; }
+    #shareButton { background-color: #ff4500; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+    #shareButton:hover { background-color: #e03e00; }
+  </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen">
+
+  <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md relative">
+    <div class="relative mb-4 h-64 video-container">
+      <video id="video" class="w-full h-full bg-black rounded-lg" muted playsinline></video>
+      <img id="defaultGif" src="./static/1take.gif" class="w-full h-full object-contain bg-black rounded-lg absolute inset-0" alt="1 Take Default" />
+      <div id="countdown" class="absolute inset-0 flex items-center justify-center text-white font-bold hidden"></div>
+      <div id="message" class="absolute inset-0 flex items-center justify-center text-white text-2xl font-bold bg-black bg-opacity-50 hidden"></div>
+      <div id="timer"></div>
+    </div>
+    <button id="recordButton" class="w-2/3 bg-orange-500 text-black py-2 rounded-lg hover:bg-orange-600 font-extrabold mx-auto block">Record</button>
+    <p class="text-center text-xs mt-2">Top 4 get posted below</p>
+    <audio id="recordingPlayback" controls style="width: 100%;"></audio>
+    <div id="recordingActions">
+      <a id="downloadLink" download="recording.webm" style="display: none;">Download Recording</a>
+      <button id="shareButton" style="display: none;">Share Recording</button>
+    </div>
+  </div>
+
+  <h2 class="text-xl font-bold mt-10">Today's top 4 Leaderboard</h2>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-6xl px-4">
+    <div class="video-container"><img src="./static/1st.gif" alt="Player 1" class="thumbnail" data-video="./static/1.mp4"></div>
+    <div class="video-container"><img src="./static/2nd.gif" alt="Player 2" class="thumbnail" data-video="./static/2.mp4"></div>
+    <div class="video-container"><img src="./static/3rd.gif" alt="Player 3" class="thumbnail" data-video="./static/3.mp4"></div>
+    <div class="video-container"><img src="./static/4th.gif" alt="Player 4" class="thumbnail" data-video="./static/rod.webm"></div>
+  </div>
+
+  <h2 class="text-xl font-bold mt-10">18 sec sing-off HALL of FAME</h2>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-6xl px-4">
+    <!-- Add future MP4s here -->
+  </div>
+
+  <div id="fullScreenContainer" class="full-screen-video">
+    <button id="closeModal" style="position:absolute;top:20px;right:30px;color:white;font-size:3rem;font-weight:bold;background:none;border:none;cursor:pointer;z-index:1001;">×</button>
+    <video id="fullScreenVideo" controls playsinline></video>
+  </div>
+
+  <div id="rodVideo" class="full-screen-video">
+    <button id="closeRod" onclick="document.getElementById('rodVideo').style.display='none'">×</button>
+    <video id="rodPlayer" controls playsinline>
+      <source src="./static/rod.webm" type="video/webm">
+    </video>
+  </div>
+  <script type="module">
+    const fullScreenContainer = document.getElementById('fullScreenContainer');
+    const fullScreenVideo = document.getElementById('fullScreenVideo');
+    const closeModal = document.getElementById("closeModal");
+    const video = document.getElementById('video');
+    const defaultGif = document.getElementById('defaultGif');
+    const rodVideo = document.getElementById('rodVideo');
+    const rodPlayer = document.getElementById('rodPlayer');
+    const closeRod = document.getElementById('closeRod');
+    const recordingPlayback = document.getElementById('recordingPlayback');
+    const downloadLink = document.getElementById('downloadLink');
+    const shareButton = document.getElementById('shareButton');
+    const recordingActions = document.getElementById('recordingActions');
+    const message = document.getElementById('message');
+    const countdown = document.getElementById('countdown');
+    const timer = document.getElementById('timer');
+
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let stream = null;
+
+    document.querySelectorAll(".thumbnail").forEach((thumb, index) => {
+      thumb.addEventListener("click", () => {
+        if (index === 3) {
+          rodVideo.style.display = 'block';
+          rodPlayer.play().catch(err => console.error("Rod video playback failed:", err));
+        } else {
+          const videoSrc = thumb.getAttribute("data-video");
+          fullScreenVideo.src = videoSrc;
+          fullScreenContainer.style.display = 'block';
+          if (fullScreenVideo.requestFullscreen) {
+            fullScreenVideo.requestFullscreen().catch(err => {
+              console.error("Fullscreen failed:", err);
+              fullScreenVideo.style.minWidth = '100vw';
+              fullScreenVideo.style.minHeight = '100vh';
+            });
+          }
+          fullScreenVideo.play();
+        }
+      });
+    });
+
+    closeModal.addEventListener("click", (event) => {
+      event.stopPropagation();
+      fullScreenVideo.pause();
+      fullScreenVideo.src = '';
+      fullScreenContainer.style.display = 'none';
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(err => console.error("Exit fullscreen failed:", err));
+      }
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement) {
+        fullScreenContainer.style.display = 'none';
+        fullScreenVideo.pause();
+        fullScreenVideo.src = '';
+      }
+    });
+
+    function playCountryRoads() {
+      defaultGif.style.visibility = 'hidden';
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+      }
+      video.src = './static/countryroads.mp4';
+      video.classList.add('playing-mp4');
+      video.style.display = 'block';
+      video.muted = false;
+      video.play().catch(err => console.error("Video playback failed:", err));
+    }
+
+    defaultGif.addEventListener('click', playCountryRoads);
+    defaultGif.addEventListener('touchstart', playCountryRoads);
+
+    video.addEventListener('ended', () => {
+      video.classList.remove('playing-mp4');
+      video.src = '';
+      video.style.display = 'none';
+      defaultGif.style.visibility = 'visible';
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && rodVideo.style.display === 'block') {
+        rodVideo.style.display = 'none';
+        rodPlayer.pause();
+      }
+    });
+
+    closeRod.addEventListener('click', () => {
+      rodVideo.style.display = 'none';
+      rodPlayer.pause();
+    });
+
+    rodPlayer.addEventListener('ended', () => {
+      rodVideo.style.display = 'none';
+      rodPlayer.pause();
+    });
+
+    // Firebase & recording logic
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+    import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+    import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBUGFGGvZTlBiTc7ZSz7KGt3wJ_95mX8VI",
+      authDomain: "singoffstar.firebaseapp.com",
+      projectId: "singoffstar",
+      storageBucket: "singoffstar.firebasestorage.app",
+      messagingSenderId: "383115460973",
+      appId: "1:383115460973:web:99a8ac072b66ffdb2f9a64",
+      measurementId: "G-9MWH7F6N2G"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const storage = getStorage(app);
+    let userId = null;
+    const artist = "RobbieWilliams";
+    const song = "CountryRoads";
+    const subject = "1Take_Videos";
+
+    signInAnonymously(auth).then((userCredential) => {
+      userId = userCredential.user.uid;
+      console.log("Authenticated user ID:", userId);
+    }).catch((error) => {
+      console.error("Firebase auth failed:", error.code, error.message);
+      message.textContent = "Authentication failed. Please try again.";
+    });
+
+    recordButton.addEventListener('click', async () => {
+      if (!userId) {
+        message.textContent = "Not authenticated. Please wait and try again.";
+        console.log("Waiting for authentication...");
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        if (!userId) {
+          message.textContent = "Authentication failed. Please refresh and try again.";
+          return;
+        }
+      }
+      await startWebcam();
+      if (mediaRecorder) {
+        await startCountdown();
+      }
+    });
+
+    async function startWebcam() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        video.srcObject = null;
+        video.src = './static/countryroadlyrics.mp4';
+        video.classList.add('playing-mp4');
+        video.style.display = 'block';
+        video.muted = true;
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            recordedChunks.push(e.data);
+            console.log("Data chunk received:", e.data.size, "bytes");
+          } else {
+            console.log("Empty data chunk received");
+          }
+        };
+        mediaRecorder.onstop = uploadVideo;
+      } catch (error) {
+        alert(`Failed to access microphone: ${error.message}`);
+        console.error("Microphone access failed:", error);
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+          stream = null;
+        }
+        video.src = '';
+        video.style.display = 'none';
+        defaultGif.style.visibility = 'visible';
+        recordButton.disabled = false;
+        recordButton.textContent = 'Record';
+      }
+    }
+
+    async function startCountdown() {
+      const messages = [
+        { text: "You've got 1 take", class: 'initial' },
+        { text: "Wait for the lyrics to appear", class: 'initial' },
+        { text: "Ready", class: 'action' },
+        { text: "Setty", class: 'action' },
+        { text: "Aaaand Go!", class: 'action' }
+      ];
+      defaultGif.style.visibility = 'visible';
+      countdown.style.visibility = 'visible';
+      timer.style.visibility = 'visible';
+
+      for (let msg of messages) {
+        countdown.textContent = msg.text;
+        countdown.className = `absolute inset-0 flex items-center justify-content-center text-white font-bold ${msg.class}`;
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      countdown.style.visibility = 'hidden';
+      defaultGif.style.visibility = 'hidden';
+      await recordVideo();
+    }
+
+    async function recordVideo() {
+      if (!mediaRecorder) {
+        console.error("MediaRecorder not initialized");
+        message.textContent = "Recording failed. Please try again.";
+        await showMessage();
+        return;
+      }
+      recordedChunks = [];
+      mediaRecorder.start();
+      console.log("Recording started");
+      recordButton.disabled = true;
+      recordButton.textContent = 'Recording...';
+      try {
+        await video.play();
+      } catch (error) {
+        console.error("Lyrics video playback failed:", error.message);
+      }
+      video.loop = false;
+      video.addEventListener('ended', () => {
+        video.pause();
+      }, { once: true });
+      startTimer();
+      await new Promise(resolve => setTimeout(resolve, 18000));
+      mediaRecorder.stop();
+      console.log("Recording stopped");
+      timer.style.visibility = 'hidden';
+      message.textContent = "Processing...";
+      message.style.visibility = 'visible';
+    }
+
+    function startTimer() {
+      let timeLeft = 18;
+      timer.textContent = timeLeft;
+      const timerInterval = setInterval(() => {
+        timeLeft--;
+        timer.textContent = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          video.pause();
+        }
+      }, 1000);
+    }
+
+    async function uploadVideo() {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+      }
+      video.src = '';
+      video.srcObject = null;
+      mediaRecorder = null;
+
+      if (recordedChunks.length === 0 || !recordedChunks.some(chunk => chunk.size > 0)) {
+        console.error("No valid recorded data");
+        message.textContent = "No recording data. Please try again.";
+        await showMessage();
+        return;
+      }
+
+      const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+      console.log("Blob created, size:", blob.size, "bytes");
+      if (blob.size === 0) {
+        console.error("Empty blob, upload aborted");
+        message.textContent = "Recording is empty. Please try again.";
+        await showMessage();
+        return;
+      }
+
+      const playbackUrl = URL.createObjectURL(blob);
+      recordingPlayback.src = playbackUrl;
+      recordingPlayback.style.display = 'block';
+      downloadLink.href = playbackUrl;
+      downloadLink.style.display = 'inline-block';
+
+      const storageRef = ref(storage, `videos/${song}/${userId}_${Date.now()}.webm`);
+      console.log("Uploading to:", storageRef.fullPath);
+      try {
+        await uploadBytes(storageRef, blob);
+        console.log("Upload successful to:", storageRef.fullPath);
+        const downloadUrl = await getDownloadURL(storageRef);
+        shareButton.style.display = 'inline-block';
+        shareButton.onclick = async () => {
+          if (navigator.share) {
+            try {
+              await navigator.share({
+                title: 'My 18sec Sing-Off Recording',
+                text: 'Check out my recording from 18sec Sing-Off!',
+                url: downloadUrl
+              });
+            } catch (err) {
+              console.error("Share failed:", err);
+            }
+          } else {
+            navigator.clipboard.writeText(downloadUrl).then(() => {
+              alert('Shareable link copied to clipboard!');
+            }).catch(err => {
+              console.error("Clipboard copy failed:", err);
+              alert('Failed to copy link. URL: ' + downloadUrl);
+            });
+          }
+        };
+        recordingActions.style.display = 'block';
+        message.textContent = "Good job! Check back later to see if you made the top 4!";
+      } catch (error) {
+        console.error("Upload failed:", error.code, error.message);
+        message.textContent = `Upload failed: ${error.message}`;
+      } finally {
+        await showMessage();
+      }
+    }
+
+    async function showMessage() {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      message.textContent = "Good job! Wait now for your recording to be processed and then to see if you made the top 4!";
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      message.style.visibility = 'hidden';
+      video.style.display = 'none';
+      defaultGif.style.visibility = 'visible';
+      recordButton.disabled = false;
+      recordButton.textContent = 'Record';
+    }
+  </script>
+</body>
+</html>
