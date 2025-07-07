@@ -8,7 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: 'Poppins', sans-serif; }
+    body { font-family: 'Poppins', sans serif; }
     #countdown.initial { font-size: 2rem; color: #ffd700; }
     #countdown.action { font-size: 5rem; color: #ff4500; animation: pulse 0.5s infinite alternate; }
     @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
@@ -114,8 +114,8 @@
     let stream = null;
 
     document.querySelectorAll(".thumbnail").forEach((thumb, index) => {
-      thumb.addEventListener("click", () => {
-        console.log(`Thumbnail ${index} clicked`);
+      function handleThumbnailInteraction(event) {
+        console.log(`Thumbnail ${index} interaction: ${event.type}`);
         if (index === 3) { // 4th.gif (index 3)
           rodVideo.style.display = 'block';
           rodPlayer.play().catch(err => console.error("Rod video playback failed:", err));
@@ -132,27 +132,9 @@
           }
           fullScreenVideo.play();
         }
-      });
-      thumb.addEventListener("touchstart", (event) => {
-        event.preventDefault(); // Prevent scroll or other default touch behaviors
-        console.log(`Thumbnail ${index} touched`);
-        if (index === 3) { // 4th.gif (index 3)
-          rodVideo.style.display = 'block';
-          rodPlayer.play().catch(err => console.error("Rod video playback failed:", err));
-        } else {
-          const videoSrc = thumb.getAttribute("data-video");
-          fullScreenVideo.src = videoSrc;
-          fullScreenContainer.style.display = 'block';
-          if (fullScreenVideo.requestFullscreen) {
-            fullScreenVideo.requestFullscreen().catch(err => {
-              console.error("Fullscreen failed:", err);
-              fullScreenVideo.style.minWidth = '100vw';
-              fullScreenVideo.style.minHeight = '100vh';
-            });
-          }
-          fullScreenVideo.play();
-        }
-      });
+      }
+      thumb.addEventListener("click", handleThumbnailInteraction);
+      thumb.addEventListener("touchstart", handleThumbnailInteraction);
     });
 
     closeModal.addEventListener("click", (event) => {
@@ -167,7 +149,6 @@
 
     closeModal.addEventListener("touchstart", (event) => {
       event.stopPropagation();
-      event.preventDefault();
       fullScreenVideo.pause();
       fullScreenVideo.src = '';
       fullScreenContainer.style.display = 'none';
@@ -186,7 +167,6 @@
 
     // Play countryroads.mp4 when clicking or touching 1take.gif
     function handleDefaultGifInteraction(event) {
-      event.preventDefault();
       console.log('Default GIF interaction:', event.type);
       defaultGif.style.visibility = 'hidden';
       if (video.srcObject) {
@@ -224,7 +204,6 @@
     });
 
     closeRod.addEventListener('touchstart', (event) => {
-      event.preventDefault();
       rodVideo.style.display = 'none';
       rodPlayer.pause();
     });
@@ -274,7 +253,6 @@
     });
 
     function handleRecordButtonInteraction(event) {
-      event.preventDefault();
       console.log('Record button interaction:', event.type);
       if (!userId) {
         message.textContent = "Not authenticated. Please wait and try again.";
