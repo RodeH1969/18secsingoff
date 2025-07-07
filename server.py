@@ -1,9 +1,8 @@
 import http.server
 import socketserver
-import ssl
 import os
 
-PORT = 8000
+PORT = int(os.getenv('PORT', 8000))  # Use Render's PORT or 8000 locally
 DIRECTORY = "."
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -18,16 +17,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 def run():
     os.chdir(DIRECTORY)
-    httpd = socketserver.TCPServer(("", PORT), Handler)
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    context.load_cert_chain(certfile="cert.pem", keyfile="key.pem")
-    httpd.socket = context.wrap_socket(httpd.socket, server_side=True)
-    print(f"Serving at https://localhost:{PORT}")
-    try:
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        print("\nServer stopped.")
-        httpd.server_close()
+    with socketserver.TCPServer(("", PORT), Handler) as httpd:
+        print(f"Serving at http://0.0.0.0:{PORT}")
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("\nServer stopped.")
+            httpd.server_close()
 
 if __name__ == "__main__":
     run()
