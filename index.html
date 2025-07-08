@@ -74,7 +74,7 @@
   <h2 class="text-xl font-bold mt-10">Today's top 4 Leaderboard</h2>
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-6xl px-4">
     <div class="video-container"><img src="./static/1st.gif" alt="Player 1" class="thumbnail" data-video="./static/1.wav"></div>
-    <div class="video-container"><img src="./static/2nd.gif" alt="Player 2" class="thumbnail" data-video="./static/2.mp4"></div>
+    <div class="video-container"><img src="./static/2nd.gif" alt="Player 2" class="thumbnail" data-video="./static/2.wav"></div>
     <div class="video-container"><img src="./static/3rd.gif" alt="Player 3" class="thumbnail" data-video="./static/3.mp4"></div>
     <div class="video-container"><img src="./static/4th.gif" alt="Player 4" class="thumbnail" data-video="./static/rod.webm"></div>
   </div>
@@ -161,8 +161,8 @@
         video.srcObject.getTracks().forEach(track => track.stop());
         video.srcObject = null;
       }
-      video.src = './static/countryroads.mp4';
-      video.classList.add('playing-mp4');
+      video.src = './static/countryroads.webm';
+      video.classList.add('playing-webm');
       video.style.display = 'block';
       video.muted = false;
       video.play().catch(err => console.error("Video playback failed:", err));
@@ -172,7 +172,7 @@
     defaultGif.addEventListener('touchstart', playCountryRoads);
 
     video.addEventListener('ended', () => {
-      video.classList.remove('playing-mp4');
+      video.classList.remove('playing-webm');
       video.src = '';
       video.style.display = 'none';
       defaultGif.style.visibility = 'visible';
