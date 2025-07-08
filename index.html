@@ -73,13 +73,13 @@
 
   <h2 class="text-xl font-bold mt-10">Today's top 4 Leaderboard</h2>
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-6xl px-4">
-    <div class="video-container"><img src="./static/1st.gif" alt="Player 1" class="thumbnail" data-video="./static/1.mp4"></div>
+    <div class="video-container"><img src="./static/1st.gif" alt="Player 1" class="thumbnail" data-video="./static/bede.wav"></div>
     <div class="video-container"><img src="./static/2nd.gif" alt="Player 2" class="thumbnail" data-video="./static/2.mp4"></div>
     <div class="video-container"><img src="./static/3rd.gif" alt="Player 3" class="thumbnail" data-video="./static/3.mp4"></div>
     <div class="video-container"><img src="./static/4th.gif" alt="Player 4" class="thumbnail" data-video="./static/rod.webm"></div>
   </div>
 
-  <h2 class="text-xl font-bold mt-10">18 sec SING-OFF Hall of Fame</h2>
+  <h2 class="text-xl font-bold mt-10">18 sec sing-off HALL of FAME</h2>
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-6xl px-4">
     <!-- Add future MP4s here -->
   </div>
@@ -95,6 +95,7 @@
       <source src="./static/rod.webm" type="video/webm">
     </video>
   </div>
+
   <script type="module">
     const fullScreenContainer = document.getElementById('fullScreenContainer');
     const fullScreenVideo = document.getElementById('fullScreenVideo');
@@ -108,17 +109,13 @@
     const downloadLink = document.getElementById('downloadLink');
     const shareButton = document.getElementById('shareButton');
     const recordingActions = document.getElementById('recordingActions');
-    const message = document.getElementById('message');
-    const countdown = document.getElementById('countdown');
-    const timer = document.getElementById('timer');
-
     let mediaRecorder = null;
     let recordedChunks = [];
     let stream = null;
 
     document.querySelectorAll(".thumbnail").forEach((thumb, index) => {
       thumb.addEventListener("click", () => {
-        if (index === 3) {
+        if (index === 3) { // 4th.gif (index 3)
           rodVideo.style.display = 'block';
           rodPlayer.play().catch(err => console.error("Rod video playback failed:", err));
         } else {
@@ -155,7 +152,8 @@
       }
     });
 
-    function playCountryRoads() {
+    // Play countryroads.mp4 when clicking 1take.gif
+    defaultGif.addEventListener('click', () => {
       defaultGif.style.visibility = 'hidden';
       if (video.srcObject) {
         video.srcObject.getTracks().forEach(track => track.stop());
@@ -166,10 +164,7 @@
       video.style.display = 'block';
       video.muted = false;
       video.play().catch(err => console.error("Video playback failed:", err));
-    }
-
-    defaultGif.addEventListener('click', playCountryRoads);
-    defaultGif.addEventListener('touchstart', playCountryRoads);
+    });
 
     video.addEventListener('ended', () => {
       video.classList.remove('playing-mp4');
@@ -178,6 +173,7 @@
       defaultGif.style.visibility = 'visible';
     });
 
+    // Close rodVideo with Escape key or X button
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && rodVideo.style.display === 'block') {
         rodVideo.style.display = 'none';
@@ -217,6 +213,14 @@
     const artist = "RobbieWilliams";
     const song = "CountryRoads";
     const subject = "1Take_Videos";
+    const countdown = document.getElementById('countdown');
+    const message = document.getElementById('message');
+    const recordButton = document.getElementById('recordButton');
+    const timer = document.getElementById('timer');
+    const recordingPlayback = document.getElementById('recordingPlayback');
+    const downloadLink = document.getElementById('downloadLink');
+    const shareButton = document.getElementById('shareButton');
+    const recordingActions = document.getElementById('recordingActions');
 
     signInAnonymously(auth).then((userCredential) => {
       userId = userCredential.user.uid;
@@ -245,11 +249,11 @@
     async function startWebcam() {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        video.srcObject = null;
+        video.srcObject = null; // No video feed
         video.src = './static/countryroadlyrics.mp4';
         video.classList.add('playing-mp4');
         video.style.display = 'block';
-        video.muted = true;
+        video.muted = true; // Prevent audio feedback
         mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
         mediaRecorder.ondataavailable = (e) => {
           if (e.data.size > 0) {
@@ -313,10 +317,11 @@
         await video.play();
       } catch (error) {
         console.error("Lyrics video playback failed:", error.message);
+        // Continue recording even if video fails
       }
-      video.loop = false;
+      video.loop = false; // Play once
       video.addEventListener('ended', () => {
-        video.pause();
+        video.pause(); // Hold last frame
       }, { once: true });
       startTimer();
       await new Promise(resolve => setTimeout(resolve, 18000));
@@ -335,7 +340,7 @@
         timer.textContent = timeLeft;
         if (timeLeft <= 0) {
           clearInterval(timerInterval);
-          video.pause();
+          video.pause(); // Ensure video pauses at 18 seconds
         }
       }, 1000);
     }
@@ -365,12 +370,16 @@
         return;
       }
 
+      // Display the recording for playback
       const playbackUrl = URL.createObjectURL(blob);
       recordingPlayback.src = playbackUrl;
       recordingPlayback.style.display = 'block';
+
+      // Set up download link
       downloadLink.href = playbackUrl;
       downloadLink.style.display = 'inline-block';
 
+      // Set up share button
       const storageRef = ref(storage, `videos/${song}/${userId}_${Date.now()}.webm`);
       console.log("Uploading to:", storageRef.fullPath);
       try {
@@ -390,6 +399,7 @@
               console.error("Share failed:", err);
             }
           } else {
+            // Fallback: Copy URL to clipboard
             navigator.clipboard.writeText(downloadUrl).then(() => {
               alert('Shareable link copied to clipboard!');
             }).catch(err => {
@@ -399,7 +409,7 @@
           }
         };
         recordingActions.style.display = 'block';
-        message.textContent = "Good job! Check back later to see if you made the top 4!";
+        message.textContent = "Good job! Wait now for your recording to be processed and then to see if you made the top 4!";
       } catch (error) {
         console.error("Upload failed:", error.code, error.message);
         message.textContent = `Upload failed: ${error.message}`;
@@ -410,13 +420,14 @@
 
     async function showMessage() {
       await new Promise(resolve => setTimeout(resolve, 3000));
-      message.textContent = "Come back tomorrow too for a new song!";
+      message.textContent = "Good job! Wait now for your recording to be processed and then to see if you made the top 4!";
       await new Promise(resolve => setTimeout(resolve, 3000));
       message.style.visibility = 'hidden';
       video.style.display = 'none';
       defaultGif.style.visibility = 'visible';
       recordButton.disabled = false;
       recordButton.textContent = 'Record';
+      // Keep recordingPlayback and recordingActions visible
     }
   </script>
 </body>
