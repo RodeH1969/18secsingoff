@@ -73,7 +73,7 @@
 
   <h2 class="text-xl font-bold mt-10">Today's top 4 Leaderboard</h2>
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-6xl px-4">
-    <div class="video-container"><img src="./static/1st.gif" alt="Player 1" class="thumbnail" data-video="./static/bede.mp4"></div>
+    <div class="video-container"><img src="./static/1st.gif" alt="Player 1" class="thumbnail" data-video="./static/Bede.mp4"></div>
     <div class="video-container"><img src="./static/2nd.gif" alt="Player 2" class="thumbnail" data-video="./static/2.mp4"></div>
     <div class="video-container"><img src="./static/3rd.gif" alt="Player 3" class="thumbnail" data-video="./static/3.mp4"></div>
     <div class="video-container"><img src="./static/4th.gif" alt="Player 4" class="thumbnail" data-video="./static/rod.webm"></div>
@@ -262,7 +262,8 @@
         mediaRecorder.onstop = uploadVideo;
       } catch (error) {
         alert(`Failed to access microphone: ${error.message}`);
-        console.error("Microphone access failed:", error);
+        console.error("Microphone access failed:", err
+System: or);
         if (stream) {
           stream.getTracks().forEach(track => track.stop());
           stream = null;
