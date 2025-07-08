@@ -73,7 +73,7 @@
 
   <h2 class="text-xl font-bold mt-10">Today's top 4 Leaderboard</h2>
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-6xl px-4">
-    <div class="video-container"><img src="./static/1st.gif" alt="Player 1" class="thumbnail" data-video="./static/1.mp4"></div>
+    <div class="video-container"><img src="./static/1st.gif" alt="Player 1" class="thumbnail" data-video="./static/bede.wav"></div>
     <div class="video-container"><img src="./static/2nd.gif" alt="Player 2" class="thumbnail" data-video="./static/2.mp4"></div>
     <div class="video-container"><img src="./static/3rd.gif" alt="Player 3" class="thumbnail" data-video="./static/3.mp4"></div>
     <div class="video-container"><img src="./static/4th.gif" alt="Player 4" class="thumbnail" data-video="./static/rod.webm"></div>
@@ -95,6 +95,7 @@
       <source src="./static/rod.webm" type="video/webm">
     </video>
   </div>
+
   <script type="module">
     const fullScreenContainer = document.getElementById('fullScreenContainer');
     const fullScreenVideo = document.getElementById('fullScreenVideo');
@@ -169,7 +170,6 @@
     }
 
     defaultGif.addEventListener('click', playCountryRoads);
-    defaultGif.addEventListener('touchstart', playCountryRoads);
 
     video.addEventListener('ended', () => {
       video.classList.remove('playing-mp4');
@@ -399,7 +399,7 @@
           }
         };
         recordingActions.style.display = 'block';
-        message.textContent = "Good job! Check back later to see if you made the top 4!";
+        message.textContent = "Good job! Come back tomorrow too for a new song!";
       } catch (error) {
         console.error("Upload failed:", error.code, error.message);
         message.textContent = `Upload failed: ${error.message}`;
