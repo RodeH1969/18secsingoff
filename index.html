@@ -63,7 +63,7 @@
       <div id="timer"></div>
     </div>
     <button id="recordButton" class="w-2/3 bg-orange-500 text-black py-2 rounded-lg hover:bg-orange-600 font-extrabold mx-auto block">Record</button>
-    <p class="text-center text-xs mt-2">Top 4 make the leaderboard</p>
+    <p class="text-center text-xs mt-2">Last Singer Standing Goes Into HOF</p>
     <audio id="recordingPlayback" controls style="width: 100%;"></audio>
     <div id="recordingActions">
       <a id="downloadLink" download="recording.webm" style="display: none;">Download Recording</a>
@@ -71,15 +71,7 @@
     </div>
   </div>
 
-  <h2 class="text-xl font-bold mt-10">Today's top 4 Leaderboard</h2>
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-6xl px-4">
-    <div class="video-container"><img src="./static/1st.gif" alt="Player 1" class="thumbnail" data-video="./static/1.wav"></div>
-    <div class="video-container"><img src="./static/2nd.gif" alt="Player 2" class="thumbnail" data-video="./static/2.wav"></div>
-    <div class="video-container"><img src="./static/3rd.gif" alt="Player 3" class="thumbnail" data-video="./static/3.wav"></div>
-    <div class="video-container"><img src="./static/4th.gif" alt="Player 4" class="thumbnail" data-video="./static/4.wav"></div>
-  </div>
-
-  <h2 class="text-xl font-bold mt-10">18 sec SING-OFF Hall of Fame</h2>
+  <h2 class="text-xl font-bold mt-10">Last Singer Standing Hall of Fame</h2>
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-6xl px-4">
     <div class="video-container"><img src="./static/sweet.gif" alt="Sweet Entry" class="thumbnail" data-video="./static/sweet.wav"></div>
   </div>
@@ -161,7 +153,7 @@
         video.srcObject.getTracks().forEach(track => track.stop());
         video.srcObject = null;
       }
-      video.src = './static/countryroads.webm';
+      video.src = './static/4.wav';
       video.classList.add('playing-webm');
       video.style.display = 'block';
       video.muted = false;
@@ -382,8 +374,8 @@
           if (navigator.share) {
             try {
               await navigator.share({
-                title: 'My 18sec Sing-Off Recording',
-                text: 'Check out my recording from 18sec Sing-Off!',
+                title: 'My Last Singer Standing Recording',
+                text: 'Check out my recording from Last Singer Standing!',
                 url: downloadUrl
               });
             } catch (err) {
@@ -399,7 +391,7 @@
           }
         };
         recordingActions.style.display = 'block';
-        message.textContent = "Good job! Check back later to see if you made the top 4!";
+        message.textContent = "Good job! Check back later today to see if you are the Last Singer Standing";
       } catch (error) {
         console.error("Upload failed:", error.code, error.message);
         message.textContent = `Upload failed: ${error.message}`;
