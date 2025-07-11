@@ -74,6 +74,7 @@
   <h2 class="text-xl font-bold mt-10">Last Singer Standing Hall of Fame</h2>
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-6xl px-4">
     <div class="video-container"><img src="./static/sweet.gif" alt="Sweet Entry" class="thumbnail" data-video="./static/sweet.wav"></div>
+    <div class="video-container"><img src="./static/countryroads2.gif" alt="Countryroads2 Entry" class="thumbnail" data-video="./static/4.wav"></div>
   </div>
 
   <div id="fullScreenContainer" class="full-screen-video">
@@ -153,7 +154,7 @@
         video.srcObject.getTracks().forEach(track => track.stop());
         video.srcObject = null;
       }
-      video.src = './static/4.wav';
+      video.src = './static/LSS1.wav';
       video.classList.add('playing-webm');
       video.style.display = 'block';
       video.muted = false;
@@ -238,7 +239,7 @@
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         video.srcObject = null;
-        video.src = './static/countryroadlyrics.mp4';
+        video.src = './static/thatwaylyrics.mp4';
         video.classList.add('playing-mp4');
         video.style.display = 'block';
         video.muted = true;
